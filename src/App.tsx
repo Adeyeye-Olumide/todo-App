@@ -1,25 +1,48 @@
-import React from 'react';
+import React, { ChangeEventHandler, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import InputComponent from './inputComponent/inputComponent';
+import { FormEvent, ChangeEvent,} from 'react';
+
+export interface Todo {
+  todo : string, 
+  id: number,
+  isDone: boolean
+}
 
 function App() {
+  const [todoArray, setTodoArray] = useState<Todo[]>([])
+
+  const addToArray = (e: ChangeEvent<HTMLFormElement>)=> {
+
+    e.preventDefault()
+    
+    let inputEl = (e.target.querySelector(".input_box") as HTMLInputElement)
+    setTodoArray([...todoArray, {todo: inputEl.value, id: todoArray.length, isDone:false}])
+
+    inputEl.value = ''
+    inputEl.blur()
+
+
+  }
+
+
+  
+
+
   return (
+   
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <span className='heading'>Taskify</span>
+      <InputComponent addToArray={addToArray}/>
+      
+        {todoArray.map(({todo, id, isDone})=> 
+          <li key={id}>{todo}</li>
+        )}
+    
+      
     </div>
+  
   );
 }
 
