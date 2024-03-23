@@ -1,4 +1,4 @@
-import React, { ChangeEventHandler, useState, useEffect, useCallback } from 'react';
+import React, { ChangeEventHandler, useState, useEffect, useCallback, useReducer } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import InputComponent from './inputComponent/inputComponent';
@@ -6,10 +6,18 @@ import { FormEvent, ChangeEvent, MouseEvent} from 'react';
 import CardComponent from './card-component/CardComponent';
 import { IconType } from 'react-icons';
 
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, setTodoArray, setDateCompleted } from './store/store';
+
+
+
 export interface Todo {
   todo : string, 
   id: number,
-  isDone: boolean
+  isDone: boolean,
+  dateCreated: string,
+  dateCompleted: string
+
 }
 
 
@@ -19,19 +27,49 @@ export interface Handler {
   editHandler: ( e: FormEvent)=> void
 }
 
+// interface TodoReducer {
+//   todoreducer: (state: Todo[], action: {type: string, payload: Todo}) => Todo[]
+ 
+// }
+
+export type TodoReducer = (state: Todo[], action: {type: string, payload: Todo[]}) => Todo[]
+
+
+
 
 
 function App() {
-  const [todoArray, setTodoArray] = useState<Todo[]>([])
 
-  let iconTargetTagName: string = ''
+  // const todoReducer: TodoReducer = (state, {type,  payload}) => {
+
+  //   if (type == "setTodoArray") return payload
+
+  //   return state
+
+  // }
+
+ 
+
+  // const [todoArray, dispatch] = useReducer(todoReducer, [])
+
+  // const setTodoArray = (data: Todo[])=>dispatch({type: 'setTodoArray', payload: data})
+  // const [todoArray, setTodoArray] = useState<Todo[]>([])
+
+
+  const dispatch = useDispatch()
+  const todoArray = useSelector((state :RootState) => state.todoStore)
 
   const addToArray = useCallback((e: ChangeEvent<HTMLFormElement>)=> {
+
 
     e.preventDefault()
     
     let inputEl = (e.target.querySelector(".input_box") as HTMLInputElement)
-    setTodoArray([...todoArray, {todo: inputEl.value, id: todoArray.length, isDone:false}])
+
+    const conditionCheck = todoArray.some((todos: Todo )=> todos.todo == inputEl.value)
+
+    if (conditionCheck) return alert("this todo already exists")
+    dispatch(setTodoArray([...todoArray, {todo: inputEl.value, id: todoArray.length, isDone:false, dateCreated: new Date().toLocaleString(), dateCompleted: ''}]))
 
     inputEl.value = ''
     inputEl.blur()
@@ -50,20 +88,26 @@ function App() {
 
     
 
-    if (iconTarget.closest(".isDone__icon")) setTodoArray(todoArray.map((todos, i, array) => {
+    if (iconTarget.closest(".isDone__icon")) {
+      dispatch(setTodoArray(todoArray.map((todos: Todo,) => {
 
-      const iconTargetString = (iconTarget?.closest(".todo__single")as HTMLFormElement).querySelector(".todo__single--text")?.textContent
+        const iconTargetString = (iconTarget?.closest(".todo__single")as HTMLFormElement).querySelector(".todo__single--text")?.textContent
 
-      if(todos.todo == iconTargetString) return {...todos, isDone: !todos.isDone}
-      
-      return todos
+        if(todos.todo == iconTargetString) return {...todos, isDone: !todos.isDone}
+        
+        return todos
     
-    }))
+      })))
+
+      dispatch(setDateCompleted())
+  
+  
+    }
     
 
     
 
-    if (iconTarget.closest(".delete__icon")) setTodoArray([...todoArray].filter(todos => todos.todo != (iconTarget?.closest(".todo__single")as HTMLFormElement).querySelector(".todo__single--text")?.textContent))
+    if (iconTarget.closest(".delete__icon")) dispatch(setTodoArray([...todoArray].filter(todos => todos.todo != (iconTarget?.closest(".todo__single")as HTMLFormElement).querySelector(".todo__single--text")?.textContent)))
 
 
     console.log(todoArray)
@@ -80,15 +124,18 @@ function App() {
     const inputEl = (formTarget.querySelector('.todo__single--edit') as HTMLInputElement)
     let string = inputEl.defaultValue
 
+    inputEl.focus()
     console.log(string)
 
    
 
     console.log(formTarget)
 
-    setTodoArray(todoArray.map(todos => todos.todo == string?
+   dispatch(setTodoArray(todoArray.map((todos: Todo) => todos.todo == string?
     {...todos, todo: inputEl.value}: todos
-    ))
+    )))
+
+    
 
     console.log(todoArray)
 
@@ -164,11 +211,31 @@ function App() {
     <div className="App">
       <span className='heading'>Taskify</span>
       <InputComponent addToArray={addToArray}/>
-      
-        {todoArray.map((todos, index)=> 
 
-          <CardComponent todos = {todos}  key = {index} id = {index.toString()} editHandler = {editHandler}></CardComponent>
-        )}
+      <div className="container">
+        <div className="todos">
+          <span className="todos__heading">
+            Active Tasks
+          </span>
+          
+          {[...todoArray].filter(todos=> !todos.isDone).map((todos, index)=> 
+
+            <CardComponent todos = {todos}  key = {index} id = {index.toString()} editHandler = {editHandler} date = {todos.dateCreated}></CardComponent>
+          )}
+        </div>
+        <div className="todos remove">
+        <span className="todos__heading">
+            Completed Tasks
+          </span>
+          
+          {[...todoArray].filter(todos=> todos.isDone).map((todos, index)=> 
+
+            <CardComponent todos = {todos}  key = {index} id = {index.toString()} editHandler = {editHandler} date = {todos.dateCompleted}></CardComponent>
+          )}
+
+        </div>
+      </div>
+      
     
       
     </div>
